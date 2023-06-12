@@ -1,4 +1,7 @@
-#include "renderer.hpp"
+#ifndef CGLWINDOW_H
+#define TESTCGLWINDOW_H_RENDERER_H
+
+#include "camera.hpp"
 #include "X11/Xlib.h"
 #include <chrono>
 #include <stdio.h>
@@ -6,7 +9,7 @@
 
 class CGLWindow {
   public:
-    CGLWindow(CGLRenderer *renderer, int width, int height);
+    CGLWindow(CGLCamera *camera, int width, int height);
 
     int init();
     void show();
@@ -16,10 +19,12 @@ class CGLWindow {
     void drawPixels(int*** pixels);
     void drawPixel(int x, int y, int color);
 
-    CGLRenderer *renderer;
+    CGLCamera *camera;
     int width, height;
     Display *display;
     GC gc;
     Window window;
     Window rootWindow;
 };
+
+#endif

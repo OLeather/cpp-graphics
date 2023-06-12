@@ -1,8 +1,8 @@
 #include "window.hpp"
 #include <iostream>
 
-CGLWindow::CGLWindow(CGLRenderer *renderer, int width, int height){
-    this->renderer = renderer;
+CGLWindow::CGLWindow(CGLCamera *camera, int width, int height){
+    this->camera = camera;
     this->width = width;
     this->height = height;
 }
@@ -34,7 +34,7 @@ void CGLWindow::show(){
 			break;
         }
 		if (ev.type == Expose) {
-            drawPixels(this->renderer->render());
+            drawPixels(this->camera->render());
         }
     }
 }
@@ -54,8 +54,8 @@ void CGLWindow::drawPixels(int*** pixels){
     int** pixels1 = *pixels;
     std::cout << sizeof(pixels1) / sizeof(int) << std::endl;
     
-    for(int x = 0; x < renderer->getWidth(); x++){
-        for(int y = 0; y < renderer->getHeight(); y++){
+    for(int x = 0; x < camera->getWidth(); x++){
+        for(int y = 0; y < camera->getHeight(); y++){
             drawPixel(x, y, (*pixels)[x][y]);
         }
     }
