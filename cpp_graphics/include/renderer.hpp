@@ -8,7 +8,7 @@ class CGLRenderer {
     CGLRenderer(int width, int height);
     ~CGLRenderer();
 
-    virtual int*** render(float fx, float fy, std::vector<CGLObject*> objects) = 0;
+    virtual int*** render(float fx, float fy, std::vector<CGLObject*> objects, std::vector<CGLLight*> lights) = 0;
 
     int getWidth();
     int getHeight();

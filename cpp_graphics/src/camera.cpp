@@ -13,8 +13,12 @@ void CGLCamera::addObject(CGLObject *object){
     this->objects.push_back(object);
 }
 
+void CGLCamera::addLight(CGLLight *light){
+    this->lights.push_back(light);
+}
+
 int*** CGLCamera::render(){
-    return this->renderer->render(fx, fy, this->objects);
+    return this->renderer->render(fx, fy, this->objects, this->lights);
 }
 
 int CGLCamera::getWidth(){
