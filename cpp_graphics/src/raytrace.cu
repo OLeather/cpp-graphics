@@ -33,6 +33,13 @@ inline __host__ __device__ float3 operator*(const float &s, const float3 &a) {
   return make_float3(a.x*s, a.y*s, a.z*s);
 }
 
+inline __host__ __device__ void operator+=(float3 &a, float3 b)
+{
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+}
+
 inline __host__ __device__ float dot(float3 a, float3 b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
@@ -52,6 +59,10 @@ inline __host__ __device__ float3 normalize(float3 v)
 inline __host__ __device__ float magnitude(float3 v)
 {
     return sqrt(dot(v, v));
+}
+
+inline __host__ __device__ float3 reflect(float3 dir, float3 normal){
+	return (dot(normalize(dir),  normalize(normal)) * 2.0 * normalize(normal)) - normalize(dir);
 }
 
 namespace Raytrace {
@@ -87,6 +98,7 @@ namespace Raytrace {
 			return depth;
 		}
 	};
+	
 
 	struct Light{
 		float3 point, color;
@@ -161,7 +173,7 @@ namespace Raytrace {
 		float y =  height/2.0 - py;
 		float dx = x/-fx;
 		float dy = y/-fy;
-		float3 dir = make_float3(dx, dy, 1);
+		float3 dir = normalize(make_float3(dx, dy, 1));
 		float3 origin = make_float3(0, 0, 0);
 		
 		int color = 0;
@@ -180,23 +192,31 @@ namespace Raytrace {
 
 		cast(dir, origin, tris, numTris, hitPoint, N, hitIndex, depth);
 		if(depth > 0){
-			float3 V = origin-hitPoint;
-			float3 illumination;
-			float3 L;
-			float3 hitOffset = (dot(dir, N) < 0) ? (hitPoint + N * 0.000001) : (hitPoint - N * 0.000001);
+			float3 diffuse = make_float3(0, 0, 0);
+			float3 specular = make_float3(0, 0, 0);
+
+			float3 hitOffset = (dot(dir, N) < 0) ? (hitPoint + N * 0.001) : (hitPoint - N * 0.001);
 			for(int i = 0; i < numLights; i++){
-				L = lights[i].point - hitPoint;
+				float3 L = normalize(lights[i].point - hitPoint);
+				float3 V = normalize(origin-hitPoint);
+
+				float3 R = reflect(-L, N);
 				float3 shadowPoint;
 				float3 shadowNormal;
 				int shadowIndex;
 				float shadowDepth;
-				cast(L, hitPoint, tris, numTris, shadowPoint, shadowNormal, shadowIndex, shadowDepth);
-				if(shadowDepth == -1){
-					illumination = illumination + tris[hitIndex].diffuse * -dot(normalize(L), normalize(N)) * lights[i].color * lights[i].intensity;
+
+				float lightDistance = magnitude(lights[i].point - hitPoint);
+
+				cast(L, hitOffset, tris, numTris, shadowPoint, shadowNormal, shadowIndex, shadowDepth);
+				bool shadow = shadowDepth != -1 && shadowDepth < lightDistance;
+				if(!shadow){
+					diffuse += tris[hitIndex].color * lights[i].intensity *  max(0.0f, dot(N, -L));
+					specular += lights[i].color * lights[i].intensity * pow(max(0.0f,dot(R, dir)), tris[hitIndex].shinyness);
 				}
 			}
 			
-			float3 colorVec = tris[hitIndex].color * tris[hitIndex].ambient + illumination;
+			float3 colorVec = tris[hitIndex].color * tris[hitIndex].ambient + (diffuse * tris[hitIndex].diffuse) + (specular * tris[hitIndex].specular);
 			color = createRGB(min(int(colorVec.x), 255), min(int(colorVec.y), 255), min(int(colorVec.z), 255));
 		}
 	}

@@ -9,7 +9,9 @@
 
 
 namespace Raytrace {
+	struct Object;
 	struct Triangle;
+	struct Sphere;
 	struct Light;
 
 	void render(int width, int height, float fx, float fy, std::vector<CGLTri*> objects, std::vector<CGLLight*> lights, int** pixels);

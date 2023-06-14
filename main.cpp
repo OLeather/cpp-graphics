@@ -17,16 +17,50 @@ int main() {
     float planeWidth = 20;
     float planeHeight = 20;
     Vector3 plane1Origin = Vector3(0, 0, 5);
-    CGLTri *tri0 = new CGLTri(Vector3(-1 * planeWidth, -1 * planeHeight, 0) + plane1Origin, Vector3(1 * planeWidth, -1 * planeHeight, 0)  + plane1Origin, Vector3(-1 * planeWidth, 1 * planeHeight, 0)  + plane1Origin, DIFFUSE, Vector3(255, 0, 0), 0.9, 0.1, 0.5, 5);
-    CGLTri *tri1 = new CGLTri(Vector3(-1 * planeWidth, 1 * planeHeight, 0) + plane1Origin, Vector3(1 * planeWidth, -1 * planeHeight, 0) + plane1Origin, Vector3(1 * planeWidth, 1 * planeHeight, 0) + plane1Origin,  DIFFUSE, Vector3(255, 0, 0), 0.9, 0.1, 0.5, 5);
+    CGLTri *tri0 = new CGLTri(
+        Vector3(-1 * planeWidth, -1 * planeHeight, 3) + plane1Origin, 
+        Vector3(1 * planeWidth, -1 * planeHeight, 0)  + plane1Origin, 
+        Vector3(-1 * planeWidth, 1 * planeHeight, 0)  + plane1Origin, 
+        DIFFUSE, 
+        Vector3(255, 0, 0), 
+        0.9, 
+        0.5,
+        0.5, 
+        25);
+    CGLTri *tri1 = new CGLTri(Vector3(-1 * planeWidth, 1 * planeHeight, 0) + plane1Origin, 
+        Vector3(1 * planeWidth, -1 * planeHeight, 0) + plane1Origin, 
+        Vector3(1 * planeWidth, 1 * planeHeight, 3) + plane1Origin, 
+        DIFFUSE, 
+        Vector3(255, 0, 0), 
+        0.9, 
+        0.5,
+        0.5, 
+        25);
     
     float plane2Width = 5;
     float plane2Height = 5;
     Vector3 plane2Origin = Vector3(10, 5, 2);
-    CGLTri *tri2 = new CGLTri(Vector3(-1 * plane2Width, -1 * plane2Height, 0) + plane2Origin, Vector3(1 * plane2Width, -1 * plane2Height, 0)  + plane2Origin, Vector3(-1 * plane2Width, 1 * plane2Height, 0)  + plane2Origin, DIFFUSE, Vector3(0, 255, 0), 0.9, 0.1, 0.5, 5);
-    CGLTri *tri3 = new CGLTri(Vector3(-1 * plane2Width, 1 * plane2Height, 0) + plane2Origin, Vector3(1 * plane2Width, -1 * plane2Height, 0) + plane2Origin, Vector3(1 * plane2Width, 1 * plane2Height, 0) + plane2Origin, DIFFUSE, Vector3(0, 255, 0), 0.9, 0.1, 0.5, 5);
-    
-    CGLLight *light0 = new CGLLight(Vector3(10, 5, .1), Vector3(255, 255, 255), .5);
+    CGLTri *tri2 = new CGLTri(Vector3(-1 * plane2Width, -1 * plane2Height, 0) + plane2Origin, 
+        Vector3(1 * plane2Width, -1 * plane2Height, 0)  + plane2Origin, 
+        Vector3(-1 * plane2Width, 1 * plane2Height, 0)  + plane2Origin,
+        DIFFUSE, 
+        Vector3(0, 255, 0), 
+        0.9, 
+        0.5, 
+        0.5, 
+        25);
+
+    // CGLTri *tri3 = new CGLTri(Vector3(-1 * plane2Width, 1 * plane2Height, 0) + plane2Origin, 
+    //     Vector3(1 * plane2Width, -1 * plane2Height, 0) + plane2Origin, 
+    //     Vector3(1 * plane2Width, 1 * plane2Height, 0) + plane2Origin, 
+    //     DIFFUSE, 
+    //     Vector3(0, 255, 0), 
+    //     0.9, 
+    //     0.5, 
+    //     0.5, 
+    //     25);
+        
+    CGLLight *light0 = new CGLLight(Vector3(10, 5, .1), Vector3(255, 255, 255), 1);
 
     // CGLLight *light1 = new CGLLight(Vector3(1, 1, 0), Vector3(255, 255, 255), .5);
 
