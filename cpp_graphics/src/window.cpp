@@ -31,7 +31,7 @@ void CGLWindow::show(){
 	while (True) {
 		int a = XNextEvent(display, &ev);
 		if (ev.type == KeyPress) {
-			break;
+			// break;
         }
 		if (ev.type == Expose) {
             drawPixels(this->camera->render());

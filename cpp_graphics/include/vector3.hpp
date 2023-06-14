@@ -5,6 +5,13 @@ class Vector3{
     Vector3();
     Vector3(float x, float y, float z);
     float x, y, z, magnitude;
+
+    Vector3 operator+(const Vector3 &v);
+    Vector3 operator-(const Vector3 &v);
+    Vector3 operator*(const Vector3 &v);
+    Vector3 operator*(const float s);
+
+    void asFloatArray(float *arr) const;
 };
 
 float dot(const Vector3 &v0, const Vector3 &v1);

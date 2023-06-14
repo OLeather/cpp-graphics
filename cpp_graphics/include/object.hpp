@@ -10,21 +10,22 @@ class CGLObject{
   public:
     CGLObject();
     CGLObject(int type);
-    CGLObject(int type, int color);
-    CGLObject(int type, int color, float diffuse, float specular, float specularExponent);
+    CGLObject(int type, Vector3 color);
+    CGLObject(int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness);
     ~CGLObject();
 
     virtual bool intersect(const Vector3 &rayDirection, const Vector3 &rayOrigin, Vector3 *hitPoint, Vector3 *hitNormal, float *depth) = 0;
 
     int getType();
-    int getColor();
-    int type, color;
-    float diffuse, specularExponent, specular;
+
+    int type;
+    Vector3 color;
+    float diffuse, specular, ambient, shinyness;
 };
 
 class CGLTri : public CGLObject{
   public:
-    CGLTri(const Vector3 &p0, const Vector3 &p1, const Vector3 &p2, int type, int color, float diffuse, float specular, float specularExponent); 
+    CGLTri(const Vector3 &p0, const Vector3 &p1, const Vector3 &p2, int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness); 
     ~CGLTri();
     bool intersect(const Vector3 &rayDirection, const Vector3 &rayOrigin, Vector3 *hitPoint, Vector3 *hitNormal, float *depth);
    
@@ -33,7 +34,7 @@ class CGLTri : public CGLObject{
 
 class CGLLight : public CGLObject{
   public:
-    CGLLight(const Vector3 &point, int color, float intensity);
+    CGLLight(const Vector3 &point, Vector3 color, float intensity);
     bool intersect(const Vector3 &rayDirection, const Vector3 &rayOrigin, Vector3 *hitPoint, Vector3 *hitNormal, float *depth) {return false;}
     Vector3 point;
     float intensity;

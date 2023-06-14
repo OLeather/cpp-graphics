@@ -1,7 +1,5 @@
-cmake_minimum_required(VERSION 2.8.4)
-project(cpp_graphics)
-
-## Project specific configurations go here
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+project(cpp_graphics LANGUAGES CXX CUDA)
 
 # enable c++11 support
 set (CMAKE_CXX_FLAGS "-std=c++11 -Wall ${CMAKE_CXX_FLAGS}")
@@ -11,6 +9,7 @@ include_directories(/usr/include/X11)
 
 file(GLOB cpp_graphics_lib_src
      "cpp_graphics/src/*.cpp"
+     "cpp_graphics/src/*.cu"
 )
 
 add_library(cpp_graphics_lib ${cpp_graphics_lib_src})

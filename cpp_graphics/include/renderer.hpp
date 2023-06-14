@@ -1,6 +1,7 @@
 #ifndef CGLRENDERER_H
 #define CGLRENDERER_H
 #include "object.hpp"
+#include "raytrace.cuh"
 #include <vector>
 
 class CGLRenderer {
@@ -8,7 +9,7 @@ class CGLRenderer {
     CGLRenderer(int width, int height);
     ~CGLRenderer();
 
-    virtual int*** render(float fx, float fy, std::vector<CGLObject*> objects, std::vector<CGLLight*> lights) = 0;
+    virtual int*** render(float fx, float fy, std::vector<CGLTri*> objects, std::vector<CGLLight*> lights) = 0;
 
     int getWidth();
     int getHeight();

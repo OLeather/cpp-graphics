@@ -14,11 +14,11 @@ class CGLCamera {
     int getWidth();
     int getHeight();
 
-    void addObject(CGLObject *object);
+    void addObject(CGLTri *object);
     void addLight(CGLLight *light);
   private:
     CGLRenderer *renderer;
-    std::vector<CGLObject*> objects;
+    std::vector<CGLTri*> objects;
     std::vector<CGLLight*> lights;
 
     float fov, fx, fy, px, py;

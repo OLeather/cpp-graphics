@@ -1,21 +1,17 @@
 #include "object.hpp"
 #include <iostream>
 
-CGLObject::CGLObject() : type(0), color(0), diffuse(0) { }
-CGLObject::CGLObject(int type) : type(type), color(0), diffuse(0) { }
-CGLObject::CGLObject(int type, int color) : type(type), color(color), diffuse(0) { }
-CGLObject::CGLObject(int type, int color, float diffuse, float specular, float specularExponent) : type(type), color(color), diffuse(diffuse), specular(specular), specularExponent(specularExponent) {}
+CGLObject::CGLObject() : type(0), color(Vector3()), diffuse(0) { }
+CGLObject::CGLObject(int type) : type(type), color(Vector3()), diffuse(0) { }
+CGLObject::CGLObject(int type, Vector3 color) : type(type), color(color), diffuse(0) { }
+CGLObject::CGLObject(int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness) : type(type), color(color), diffuse(diffuse), specular(specular), ambient(ambient), shinyness(shinyness) {}
 CGLObject::~CGLObject() { }
 
 int CGLObject::getType(){
     return type;
 }
 
-int CGLObject::getColor(){
-    return color;
-}
-
-CGLTri::CGLTri(const Vector3 &p0, const Vector3 &p1, const Vector3 &p2, int type, int color, float diffuse, float specular, float specularExponent) : CGLObject(type, color, diffuse, specular, specularExponent) {
+CGLTri::CGLTri(const Vector3 &p0, const Vector3 &p1, const Vector3 &p2, int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness) : CGLObject(type, color, diffuse, specular, ambient, shinyness) {
     this->p0 = p0;
     this->p1 = p1;
     this->p2 = p2;
@@ -34,7 +30,7 @@ bool CGLTri::intersect(const Vector3 &rayDirection, const Vector3 &rayOrigin, Ve
 
     float nDotDir = dot(n, rayDirection);
     
-    if(nDotDir < 2e-8){
+    if(abs(nDotDir) < 2e-8){
         return false;
     }
     
@@ -55,7 +51,7 @@ bool CGLTri::intersect(const Vector3 &rayDirection, const Vector3 &rayOrigin, Ve
     return true;
 }
 
-CGLLight::CGLLight(const Vector3 &point, int color, float intensity) : CGLObject(LIGHT, color) {
+CGLLight::CGLLight(const Vector3 &point, Vector3 color, float intensity) : CGLObject(LIGHT, color) {
     this->point = point;
     this->intensity = intensity;
 }

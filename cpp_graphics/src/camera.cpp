@@ -9,7 +9,7 @@ CGLCamera::CGLCamera(CGLRenderer *renderer, float fov){
     py = renderer->getHeight()/2.0;
 }
 
-void CGLCamera::addObject(CGLObject *object){
+void CGLCamera::addObject(CGLTri *object){
     this->objects.push_back(object);
 }
 
