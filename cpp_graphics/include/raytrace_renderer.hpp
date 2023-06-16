@@ -7,7 +7,7 @@ class RayTraceRenderer : public CGLRenderer {
   public:
     RayTraceRenderer(int width, int height, int steps);
     ~RayTraceRenderer();
-    int*** render(float fx, float fy, std::vector<CGLTri*> objects, std::vector<CGLLight*> lights);
+    int*** render(float fx, float fy, Vector3 origin, Vector3 rotation, std::vector<CGLTri*> objects, std::vector<CGLLight*> lights);
   private:
     int steps;
     bool cast(const Vector3 &rayDirection, const Vector3 &rayOrigin, std::vector<CGLTri*> objects, Vector3 *hitPoint, Vector3 *hitNormal, int *hitIndex, float *depth);

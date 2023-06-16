@@ -16,6 +16,9 @@ class CGLCamera {
 
     void addObject(CGLTri *object);
     void addLight(CGLLight *light);
+
+    Vector3 origin = Vector3();
+    Vector3 rotation = Vector3();
   private:
     CGLRenderer *renderer;
     std::vector<CGLTri*> objects;

@@ -11,7 +11,7 @@ class CGLObject{
     CGLObject();
     CGLObject(int type);
     CGLObject(int type, Vector3 color);
-    CGLObject(int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness);
+    CGLObject(int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness, float reflectivity, float transparency);
     ~CGLObject();
 
     virtual bool intersect(const Vector3 &rayDirection, const Vector3 &rayOrigin, Vector3 *hitPoint, Vector3 *hitNormal, float *depth) = 0;
@@ -20,12 +20,12 @@ class CGLObject{
 
     int type;
     Vector3 color;
-    float diffuse, specular, ambient, shinyness;
+    float diffuse, specular, ambient, shinyness, reflectivity, transparency;
 };
 
 class CGLTri : public CGLObject{
   public:
-    CGLTri(const Vector3 &p0, const Vector3 &p1, const Vector3 &p2, int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness); 
+    CGLTri(const Vector3 &p0, const Vector3 &p1, const Vector3 &p2, int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness, float reflectivity, float transparency); 
     ~CGLTri();
     bool intersect(const Vector3 &rayDirection, const Vector3 &rayOrigin, Vector3 *hitPoint, Vector3 *hitNormal, float *depth);
    

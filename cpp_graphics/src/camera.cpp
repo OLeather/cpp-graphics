@@ -18,7 +18,7 @@ void CGLCamera::addLight(CGLLight *light){
 }
 
 int*** CGLCamera::render(){
-    return this->renderer->render(fx, fy, this->objects, this->lights);
+    return this->renderer->render(fx, fy, origin, rotation, this->objects, this->lights);
 }
 
 int CGLCamera::getWidth(){

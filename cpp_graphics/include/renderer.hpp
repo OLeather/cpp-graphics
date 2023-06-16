@@ -9,7 +9,7 @@ class CGLRenderer {
     CGLRenderer(int width, int height);
     ~CGLRenderer();
 
-    virtual int*** render(float fx, float fy, std::vector<CGLTri*> objects, std::vector<CGLLight*> lights) = 0;
+    virtual int*** render(float fx, float fy, Vector3 origin, Vector3 rotation, std::vector<CGLTri*> objects, std::vector<CGLLight*> lights) = 0;
 
     int getWidth();
     int getHeight();
