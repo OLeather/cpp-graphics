@@ -1,6 +1,5 @@
 #include "raytrace.cuh"
 #include <iostream>
-
 #include <stdio.h>
 
 inline __host__ __device__ float3 vec_to_float3(Vector3 v)
@@ -78,9 +77,9 @@ inline __host__ __device__ float3 reflect(float3 dir, float3 normal){
 namespace Raytrace {
 	struct Triangle {
 		float3 v0, v1, v2, n, color;
-		float diffuse, specular, ambient, shinyness, reflectivity, transparency;
+		float diffuse, specular, ambient, shinyness, ior, transparency;
 		Triangle() {}
-		Triangle(float3 v0, float3 v1, float3 v2, float3 color, float diffuse, float specular, float ambient, float shinyness, float reflectivity, float transparency) : v0(v0), v1(v1), v2(v2), n(normalize(cross(v1-v0, v2-v0))), color(color), diffuse(diffuse), specular(specular), ambient(ambient), shinyness(shinyness), reflectivity(reflectivity), transparency(transparency) {}
+		Triangle(float3 v0, float3 v1, float3 v2, float3 color, float diffuse, float specular, float ambient, float shinyness, float ior, float transparency) : v0(v0), v1(v1), v2(v2), n(normalize(cross(v1-v0, v2-v0))), color(color), diffuse(diffuse), specular(specular), ambient(ambient), shinyness(shinyness), ior(ior), transparency(transparency) {}
 
 		__device__ float intersect(float3 dir, float3 origin, float3 &hitPoint, float3 &hitNormal){
 			//Cases where ray does not intersect: normal dot dir is close to 0 (parallel), t  < 0 (triangle behind ray), N dot (edge X v(0..2)) (passes a side)
@@ -111,9 +110,9 @@ namespace Raytrace {
 
 	struct Sphere{
 		float3 center, color;
-		float radius, diffuse, specular, ambient, shinyness, reflectivity, transparency;
+		float radius, diffuse, specular, ambient, shinyness, ior, transparency;
 		Sphere() {}
-		Sphere(float3 center, float radius, float3 color, float diffuse, float specular, float ambient, float shinyness, float reflectivity, float transparency) : center(center), radius(radius), color(color), diffuse(diffuse), specular(specular), ambient(ambient), shinyness(shinyness), reflectivity(reflectivity), transparency(transparency) {}
+		Sphere(float3 center, float radius, float3 color, float diffuse, float specular, float ambient, float shinyness, float ior, float transparency) : center(center), radius(radius), color(color), diffuse(diffuse), specular(specular), ambient(ambient), shinyness(shinyness), ior(ior), transparency(transparency) {}
 
 		__device__ int solveQuadratic(float &a, float &b, float &c, float &x0, float &x1){
 			float d = b * b - 4 * a * c;
@@ -182,14 +181,14 @@ namespace Raytrace {
 		int h_numTris = objects.size();
 		Triangle h_tris[h_numTris];
 		for(int i = 0; i < objects.size(); i++){
-			Triangle tri = Triangle(vec_to_float3(objects[i]->p0), vec_to_float3(objects[i]->p1), vec_to_float3(objects[i]->p2), vec_to_float3(objects[i]->color), objects[i]->diffuse, objects[i]->specular, objects[i]->ambient, objects[i]->shinyness, objects[i]->reflectivity, objects[i]->transparency);
+			Triangle tri = Triangle(vec_to_float3(objects[i]->p0), vec_to_float3(objects[i]->p1), vec_to_float3(objects[i]->p2), vec_to_float3(objects[i]->color), objects[i]->diffuse, objects[i]->specular, objects[i]->ambient, objects[i]->shinyness, objects[i]->ior, objects[i]->transparency);
 			h_tris[i] = tri;
 		}
 
 		int h_numSpheres = 5;
 		Sphere h_spheres[h_numSpheres];
 		for(int i = 0; i < h_numSpheres; i++){
-			Sphere sphere = Sphere(make_float3(i * 15, 0, 5), 5, make_float3(255, 255, 255), 0, 1, .1, 50, 1, 0);
+			Sphere sphere = Sphere(make_float3(i * 15, 0, 5), 5, make_float3(255, 255, 255), 0, 1, 0.0, 50, .1, 0);
 			h_spheres[i] = sphere;
 		}
 
@@ -225,7 +224,7 @@ namespace Raytrace {
 
 		// std::cout << thr_per_blk << std::endl;
 
-		trace<<<blk_in_grid, thr_per_blk>>>(fx, fy, width, height, d_origin, d_rotation, d_tris, h_numTris, d_spheres, h_numSpheres, d_lights, h_numLights, d_pixels);
+		renderKernel<<<blk_in_grid, thr_per_blk>>>(fx, fy, width, height, d_origin, d_rotation, d_tris, h_numTris, d_spheres, h_numSpheres, d_lights, h_numLights, d_pixels);
 
 		cudaMemcpy(h_pixels, d_pixels, width*height*sizeof(int), cudaMemcpyDeviceToHost);
 
@@ -243,12 +242,45 @@ namespace Raytrace {
 	    cudaFree(d_lights);
 	}
 
-	__device__ unsigned long createRGB(int r, int g, int b)
-	{   
+	__device__ unsigned long createRGBInt(int r, int g, int b) {   
 		return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
 	}
 
-	__global__ void trace(float fx, float fy, int width, int height, float3 origin, float3 rotation, Triangle tris[], int numTris, Sphere spheres[], int numSpheres, Light lights[], int numLights, int* pixels)
+	__device__ float3 createRGBVec(int color) {
+		return make_float3(((color >> 16) & 0xff), ((color >>  8) & 0xff), ((color) & 0xff));
+	}
+
+	__device__ float fresnel(const float3 &dir, const float3 &N, const float &ior){
+		float kr = 0;
+		float cosi = dot(dir, N);
+		if(cosi > 1) cosi = 1;
+		if(cosi < -1) cosi = -1;
+
+		float etai = 1, etat = ior;
+
+		if(cosi > 0){
+			float temp = etai;
+			etai = etat;
+			etat = temp;
+		}
+
+		float sint = etai / etat * sqrt(max(0.0f, 1-cosi*cosi));
+
+		if(sint >= 1){
+			kr = 1;
+		}
+		else{
+			float cost = sqrt(max(0.0f, 1-sint*sint));
+			cosi = abs(cosi);
+			float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
+			float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
+			kr = (Rs * Rs + Rp * Rp) / 2;
+		}
+
+		return kr;
+	}
+
+	__global__ void renderKernel(float fx, float fy, int width, int height, float3 origin, float3 rotation, Triangle tris[], int numTris, Sphere spheres[], int numSpheres, Light lights[], int numLights, int* pixels)
 	{
 		int id = blockDim.x * blockIdx.x + threadIdx.x;
 		int px = id % width;
@@ -273,30 +305,29 @@ namespace Raytrace {
 		int hitIndex;
 		float depth = 0;
 
-
-		color = createRGB(0, 0, 0);
+		color = createRGBInt(0, 0, 0);
 
 		if(step < MAX_RAYTRACE_DEPTH){
 			depth = cast(dir, origin, tris, numTris, spheres, numSpheres, hitPoint, N, hitIndex);
 			if(depth > 0 && depth > 0.01){
 				float3 hitColor;
-				float diffuse, specular, ambient, shinyness, reflectivity;
+				float kDiffuse, kSpecular, kAmbient, shinyness, kIndexOfRefraction;
 				if(hitIndex < numTris){
 					hitColor = tris[hitIndex].color;
-					diffuse = tris[hitIndex].diffuse;
-					specular = tris[hitIndex].specular;
-					ambient = tris[hitIndex].ambient;
+					kDiffuse = tris[hitIndex].diffuse;
+					kSpecular = tris[hitIndex].specular;
+					kAmbient = tris[hitIndex].ambient;
 					shinyness = tris[hitIndex].shinyness;
-					reflectivity = tris[hitIndex].reflectivity;
+					kIndexOfRefraction = tris[hitIndex].ior;
 				}
 				else{
 					int index = hitIndex-numTris;
 					hitColor = spheres[index].color;
-					diffuse = spheres[index].diffuse;
-					specular = spheres[index].specular;
-					ambient = spheres[index].ambient;
+					kDiffuse = spheres[index].diffuse;
+					kSpecular = spheres[index].specular;
+					kAmbient = spheres[index].ambient;
 					shinyness = spheres[index].shinyness;
-					reflectivity = spheres[index].reflectivity;
+					kIndexOfRefraction = spheres[index].ior;
 				}
 
 				float3 V = normalize(origin-hitPoint);
@@ -328,17 +359,14 @@ namespace Raytrace {
 				int reflectColor = 0;
 				
 				raytrace(W, hitOffset, tris, numTris, spheres, numSpheres, lights, numLights, reflectColor, step + 1);
-				float r = ((reflectColor >> 16) & 0xff);
-				float g = ((reflectColor >>  8) & 0xff);
-				float b = ((reflectColor      ) & 0xff);
-				
-				float3 reflectedLight = reflectivity * make_float3(r, g, b);
+				float kr = fresnel(dir, N, kIndexOfRefraction);
+				float3 reflectedLight = kr * createRGBVec(reflectColor);
 
-				float3 directLight = hitColor * ambient + (diffuseVec * diffuse) + (specularVec * specular);
+				float3 directLight = hitColor * kAmbient + (diffuseVec * kDiffuse) + (specularVec * kSpecular);
 
 				float3 colorVec = directLight + reflectedLight;
 
-				color = createRGB(min(int(colorVec.x), 255), min(int(colorVec.y), 255), min(int(colorVec.z), 255));
+				color = createRGBInt(min(int(colorVec.x), 255), min(int(colorVec.y), 255), min(int(colorVec.z), 255));
 			}
 		}	
 	}

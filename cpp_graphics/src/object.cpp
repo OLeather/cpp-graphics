@@ -4,14 +4,14 @@
 CGLObject::CGLObject() : type(0), color(Vector3()), diffuse(0) { }
 CGLObject::CGLObject(int type) : type(type), color(Vector3()), diffuse(0) { }
 CGLObject::CGLObject(int type, Vector3 color) : type(type), color(color), diffuse(0) { }
-CGLObject::CGLObject(int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness, float reflectivity, float transparency) : type(type), color(color), diffuse(diffuse), specular(specular), ambient(ambient), shinyness(shinyness), reflectivity(reflectivity), transparency(transparency) {}
+CGLObject::CGLObject(int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness, float ior, float transparency) : type(type), color(color), diffuse(diffuse), specular(specular), ambient(ambient), shinyness(shinyness), ior(ior), transparency(transparency) {}
 CGLObject::~CGLObject() { }
 
 int CGLObject::getType(){
     return type;
 }
 
-CGLTri::CGLTri(const Vector3 &p0, const Vector3 &p1, const Vector3 &p2, int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness, float reflectivity, float transparency) : CGLObject(type, color, diffuse, specular, ambient, shinyness, reflectivity, transparency) {
+CGLTri::CGLTri(const Vector3 &p0, const Vector3 &p1, const Vector3 &p2, int type, Vector3 color, float diffuse, float specular, float ambient, float shinyness, float ior, float transparency) : CGLObject(type, color, diffuse, specular, ambient, shinyness, ior, transparency) {
     this->p0 = p0;
     this->p1 = p1;
     this->p2 = p2;

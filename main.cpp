@@ -23,7 +23,7 @@ int main() {
         Vector3(1 * planeWidth, 0, -1 * planeHeight)  + plane1Origin,
         DIFFUSE, 
         Vector3(255, 0, 0), 
-        0.0, 
+        1, 
         0.5,
         0.2, 
         25,
@@ -40,21 +40,21 @@ int main() {
         0.0,
         0.1, 
         25,
-        1,
+        .1,
         0);
     
     float plane2Width = 5;
     float plane2Height = 5;
-    Vector3 plane2Origin = Vector3(0, 0, 4);
+    Vector3 plane2Origin = Vector3(0, 0, -5);
     CGLTri *tri2 = new CGLTri(
         Vector3(-1 * plane2Width, 1 * plane2Height, 0)  + plane2Origin,
-        Vector3(-1 * plane2Width, -1 * plane2Height, 5) + plane2Origin, 
+        Vector3(-1 * plane2Width, -1 * plane2Height, 0) + plane2Origin, 
         Vector3(1 * plane2Width, -1 * plane2Height, 0)  + plane2Origin, 
         DIFFUSE, 
         Vector3(0, 255, 255), 
-        0.0, 
-        0.0,
-        .5, 
+        1, 
+        0.5,
+        0.1, 
         25,
         1,
         0);
@@ -69,9 +69,9 @@ int main() {
     //     0.5, 
     //     25);
         
-    CGLLight *light0 = new CGLLight(Vector3(10, 5, 0), Vector3(255, 255, 255), 1);
+    CGLLight *light0 = new CGLLight(Vector3(10, 5, -10), Vector3(255, 255, 255), 1);
 
-    CGLLight *light1 = new CGLLight(Vector3(-10, -5, 0), Vector3(255, 255, 255), 1);
+    CGLLight *light1 = new CGLLight(Vector3(-10, -5, -10), Vector3(255, 255, 255), 1);
 
     RayTraceRenderer *renderer = new RayTraceRenderer(width, height, 5);
     CGLCamera *camera = new CGLCamera(renderer, fov);
