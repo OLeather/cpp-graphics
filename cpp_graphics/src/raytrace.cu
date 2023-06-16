@@ -61,6 +61,16 @@ inline __host__ __device__ float magnitude(float3 v)
     return sqrt(dot(v, v));
 }
 
+inline __host__ __device__ float3 min(float a, float3 v)
+{
+    return make_float3(min(a, v.x), min(a, v.y), min(a, v.z));
+}
+
+inline __host__ __device__ float3 max(float a, float3 v)
+{
+    return make_float3(max(a, v.x), max(a, v.y), max(a, v.z));
+}
+
 inline __host__ __device__ float3 reflect(float3 dir, float3 normal){
 	return (dot(normalize(dir),  normalize(normal)) * 2.0 * normalize(normal)) - normalize(dir);
 }
@@ -98,6 +108,67 @@ namespace Raytrace {
 			return depth;
 		}
 	};
+
+	struct Sphere{
+		float3 center, color;
+		float radius, diffuse, specular, ambient, shinyness, reflectivity, transparency;
+		Sphere() {}
+		Sphere(float3 center, float radius, float3 color, float diffuse, float specular, float ambient, float shinyness, float reflectivity, float transparency) : center(center), radius(radius), color(color), diffuse(diffuse), specular(specular), ambient(ambient), shinyness(shinyness), reflectivity(reflectivity), transparency(transparency) {}
+
+		__device__ int solveQuadratic(float &a, float &b, float &c, float &x0, float &x1){
+			float d = b * b - 4 * a * c;
+			
+			if(d < 0) {
+				return -1;
+			}
+			else if(d == 0){
+				x0 = x1 = -0.5 * b/a;
+			}
+			else{
+				float q = (b > 0) ? 
+					-0.5 * (b - sqrt(d)) :
+					-0.5 * (b - sqrt(d));
+				x0 = q/a;
+				x1 = c/q;
+			}
+			if(x0 > x1){
+				float temp = x1;
+				x1 = x0;
+				x0 = temp;
+			}
+
+			return 1;
+		}
+
+		__device__ float intersect(float3 dir, float3 origin, float3 &hitPoint, float3 &hitNormal){
+			float3 L = origin-center;
+			float a = dot(dir, dir);
+			float b = 2 * dot(dir, L);
+			float c = dot(L, L) - (radius*radius);
+			float t0 = 0;
+			float t1 = 0;
+			if(solveQuadratic(a, b, c, t0, t1) == -1){
+				return -1;
+			}
+			if(t0 > t1){
+				float temp = t1;
+				t1 = t0;
+				t0 = temp;
+			}
+
+			if(t0 < 0){
+				t0 = t1;
+				if(t0 < 0){
+					return -1;
+				}
+			}
+
+			hitPoint = origin + dir * t0; 
+			hitNormal = normalize(hitPoint-center);
+
+			return magnitude(hitPoint-origin);
+		}
+	};
 	
 
 	struct Light{
@@ -115,6 +186,13 @@ namespace Raytrace {
 			h_tris[i] = tri;
 		}
 
+		int h_numSpheres = 5;
+		Sphere h_spheres[h_numSpheres];
+		for(int i = 0; i < h_numSpheres; i++){
+			Sphere sphere = Sphere(make_float3(i * 15, 0, 5), 5, make_float3(255, 255, 255), 0, 1, .1, 50, 1, 0);
+			h_spheres[i] = sphere;
+		}
+
 		int h_numLights = lights.size();
 		Light h_lights[h_numLights];
 		for(int i = 0; i < lights.size(); i++){
@@ -123,15 +201,18 @@ namespace Raytrace {
 		}
 
 		Triangle *d_tris;
+		Sphere *d_spheres;
 		Light *d_lights;
 		int *d_pixels;
 		int *h_pixels = (int*)malloc(width*height*sizeof(int));
 		
 		cudaMalloc(&d_tris, sizeof(h_tris));
+		cudaMalloc(&d_spheres, sizeof(h_spheres));
 		cudaMalloc(&d_lights, sizeof(h_lights));
 		cudaMalloc(&d_pixels, width*height*sizeof(int));
 		
 		cudaMemcpy(d_tris, h_tris, sizeof(h_tris), cudaMemcpyHostToDevice);
+		cudaMemcpy(d_spheres, h_spheres, sizeof(h_spheres), cudaMemcpyHostToDevice);
 		cudaMemcpy(d_lights, h_lights, sizeof(h_lights), cudaMemcpyHostToDevice);
 
 		// render each pixel
@@ -144,7 +225,7 @@ namespace Raytrace {
 
 		// std::cout << thr_per_blk << std::endl;
 
-		trace<<<blk_in_grid, thr_per_blk>>>(fx, fy, width, height, d_origin, d_rotation, d_tris, h_numTris, d_lights, h_numLights, d_pixels);
+		trace<<<blk_in_grid, thr_per_blk>>>(fx, fy, width, height, d_origin, d_rotation, d_tris, h_numTris, d_spheres, h_numSpheres, d_lights, h_numLights, d_pixels);
 
 		cudaMemcpy(h_pixels, d_pixels, width*height*sizeof(int), cudaMemcpyDeviceToHost);
 
@@ -158,6 +239,7 @@ namespace Raytrace {
 		}
 		
 		cudaFree(d_tris);
+		cudaFree(d_spheres);
 	    cudaFree(d_lights);
 	}
 
@@ -166,7 +248,7 @@ namespace Raytrace {
 		return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
 	}
 
-	__global__ void trace(float fx, float fy, int width, int height, float3 origin, float3 rotation, Triangle tris[], int numTris, Light lights[], int numLights, int* pixels)
+	__global__ void trace(float fx, float fy, int width, int height, float3 origin, float3 rotation, Triangle tris[], int numTris, Sphere spheres[], int numSpheres, Light lights[], int numLights, int* pixels)
 	{
 		int id = blockDim.x * blockIdx.x + threadIdx.x;
 		int px = id % width;
@@ -180,82 +262,132 @@ namespace Raytrace {
 		
 
 		int color = 0;
-		raytrace(dir, origin, tris, numTris, lights, numLights, color, 0);
+		raytrace(dir, origin, tris, numTris, spheres, numSpheres, lights, numLights, color, 0);
 		
 		pixels[id] = color;
 	}
 
-	__device__ void raytrace(float3 dir, float3 origin, Triangle tris[], int numTris, Light lights[], int numLights, int &color, int step){
+	__device__ void raytrace(float3 dir, float3 origin, Triangle tris[], int numTris, Sphere spheres[], int numSpheres, Light lights[], int numLights, int &color, int step){
 		float3 hitPoint;
 		float3 N;
 		int hitIndex;
 		float depth = 0;
 
+
 		color = createRGB(0, 0, 0);
 
-		cast(dir, origin, tris, numTris, hitPoint, N, hitIndex, depth);
-		if(depth > 0 && depth > 0.01){
-			if(step > 2){
-				color = createRGB(min(int(tris[hitIndex].color.x), 255), min(int(tris[hitIndex].color.y), 255), min(int(tris[hitIndex].color.z), 255));
-			}
-			else{
+		if(step < MAX_RAYTRACE_DEPTH){
+			depth = cast(dir, origin, tris, numTris, spheres, numSpheres, hitPoint, N, hitIndex);
+			if(depth > 0 && depth > 0.01){
+				float3 hitColor;
+				float diffuse, specular, ambient, shinyness, reflectivity;
+				if(hitIndex < numTris){
+					hitColor = tris[hitIndex].color;
+					diffuse = tris[hitIndex].diffuse;
+					specular = tris[hitIndex].specular;
+					ambient = tris[hitIndex].ambient;
+					shinyness = tris[hitIndex].shinyness;
+					reflectivity = tris[hitIndex].reflectivity;
+				}
+				else{
+					int index = hitIndex-numTris;
+					hitColor = spheres[index].color;
+					diffuse = spheres[index].diffuse;
+					specular = spheres[index].specular;
+					ambient = spheres[index].ambient;
+					shinyness = spheres[index].shinyness;
+					reflectivity = spheres[index].reflectivity;
+				}
+
 				float3 V = normalize(origin-hitPoint);
 
-				float3 diffuse = make_float3(0, 0, 0);
-				float3 specular = make_float3(0, 0, 0);
+				float3 diffuseVec = make_float3(0, 0, 0);
+				float3 specularVec = make_float3(0, 0, 0);
 
 				float3 hitOffset = (dot(dir, N) < 0) ? (hitPoint + N * 0.001) : (hitPoint - N * 0.001);
-				for(int i = 0; i < numLights; i++){
+				for(int i = 0; i < 1; i++){
 					float3 L = normalize(lights[i].point - hitPoint);
 
-					float3 R = reflect(-L, N);
-					float3 shadowPoint;
-					float3 shadowNormal;
-					int shadowIndex;
-					float shadowDepth;
+					float RdotDir = max(0.0f, dot(reflect(-L, N), dir));
+					float N_dot_L = max(0.0f, dot(N, -L));
 
 					float lightDistance = magnitude(lights[i].point - hitPoint);
-
-					cast(L, hitOffset, tris, numTris, shadowPoint, shadowNormal, shadowIndex, shadowDepth);
+					float shadowDepth = cast(L, hitOffset, tris, numTris, spheres, numSpheres);
+					
 					bool shadow = shadowDepth != -1 && shadowDepth < lightDistance;
+	
 					if(!shadow){
-						diffuse += tris[hitIndex].color * lights[i].intensity *  max(0.0f, dot(N, -L));
-						specular += lights[i].color * lights[i].intensity * pow(max(0.0f,dot(R, dir)), tris[hitIndex].shinyness);
+						diffuseVec += hitColor * lights[i].intensity *  N_dot_L;
+						specularVec += lights[i].color * lights[i].intensity * pow(RdotDir, shinyness);
 					}
 				}
 
+				// printf("%f %f %f \n", diffuseVec.x, diffuseVec.y, diffuseVec.z);
+
 				float3 W = reflect(V, N);
 				int reflectColor = 0;
-				raytrace(W, hitOffset, tris, numTris, lights, numLights, reflectColor, step + 1);
+				
+				raytrace(W, hitOffset, tris, numTris, spheres, numSpheres, lights, numLights, reflectColor, step + 1);
 				float r = ((reflectColor >> 16) & 0xff);
 				float g = ((reflectColor >>  8) & 0xff);
 				float b = ((reflectColor      ) & 0xff);
-				float3 reflectedLight = tris[hitIndex].reflectivity * make_float3(r, g, b);
+				
+				float3 reflectedLight = reflectivity * make_float3(r, g, b);
 
-				float3 directLight = tris[hitIndex].color * tris[hitIndex].ambient + (diffuse * tris[hitIndex].diffuse) + (specular * tris[hitIndex].specular);
+				float3 directLight = hitColor * ambient + (diffuseVec * diffuse) + (specularVec * specular);
 
 				float3 colorVec = directLight + reflectedLight;
 
 				color = createRGB(min(int(colorVec.x), 255), min(int(colorVec.y), 255), min(int(colorVec.z), 255));
 			}
-		}
+		}	
 	}
 
-	__device__ void cast(float3 dir, float3 origin, Triangle tris[], int numTris, float3 &hitPoint, float3 &hitNormal, int &hitIndex, float &depth){
-		float closestDepth = 9999999;
+	__device__ float cast(float3 dir, float3 origin, Triangle tris[], int numTris, Sphere spheres[], int numSpheres){
+		float closestDepth = -1;
 		float3 point;
 		float3 normal;
-		depth = -1;
 		
 		for(int i = 0; i < numTris; i++){
-			float depth_ = tris[i].intersect(dir, origin, point, normal);
-			if(depth_ > 0 && depth_ < closestDepth){
-				closestDepth = depth_;
-				depth = depth_;
+			float depth = tris[i].intersect(dir, origin, point, normal);
+			if(depth > 0 && (depth < closestDepth || closestDepth == -1)){
+				closestDepth = depth;
+			} 
+		}
+		for(int i = 0; i < numSpheres; i++){
+			float depth = spheres[i].intersect(dir, origin, point, normal);
+			if(depth > 0 && (depth < closestDepth || closestDepth == -1)){
+				closestDepth = depth;
+			} 
+		}
+
+		return closestDepth;
+	}
+
+	__device__ float cast(float3 dir, float3 origin, Triangle tris[], int numTris, Sphere spheres[], int numSpheres, float3 &hitPoint, float3 &hitNormal, int &hitIndex){
+		float closestDepth = -1;
+		float3 point;
+		float3 normal;
+		
+		for(int i = 0; i < numTris; i++){
+			float depth = tris[i].intersect(dir, origin, point, normal);
+			if(depth > 0 && (depth < closestDepth || closestDepth == -1)){
+				closestDepth = depth;
 				hitPoint = point;
 				hitIndex = i;
 				hitNormal = normal;
 			} 
 		}
+		for(int i = 0; i < numSpheres; i++){
+			float depth = spheres[i].intersect(dir, origin, point, normal);
+			if(depth > 0 && (depth < closestDepth || closestDepth == -1)){
+				closestDepth = depth;
+				hitPoint = point;
+				hitIndex = i + numTris;
+				hitNormal = normal;
+			} 
+		}
+
+		return closestDepth;
 	}
 }
