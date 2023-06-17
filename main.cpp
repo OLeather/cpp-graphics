@@ -7,7 +7,7 @@
 #include "cpp_graphics.hpp"
 
 int main() {
-    int width = 800, height = 800;
+    int width = 1920, height = 1080;
     float fov = 30;
     
     // CGLTri *tri0 = new CGLTri(Vector3(10, -10, -1), Vector3(10, 0, -1), Vector3(0, 0, -1), DIFFUSE, Vector3(255, 0, 0), 0.9, 0.1, 0.001, 5);
