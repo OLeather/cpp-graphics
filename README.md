@@ -2,6 +2,8 @@
 
 ![gif](https://github.com/OLeather/cpp-graphics/blob/main/ray_trace_gif_high_quality.gif)
 
+To expand upon a previous project I made a few years ago in High School, [OLeather/java-3d-renderer](https://github.com/OLeather/java-3d-renderer), I decided to use my broader set of software experience now as a University student to re-approach the project in C++. I also used it as an exercise to learn CUDA, which is widely used in the field of machine learning. My new approach was to implement a recursive ray tracer, which can achieve much more realistic lighting effects, as well as support for reflective and transparent materials using ray reflection and refraction.
+
 ## Features
 Capable of diffuse, specular, reflective, and refractive light calculations for a variety of effective materials and surfaces. Computes each pixel in parallel using CUDA graphics acceleration.
 
