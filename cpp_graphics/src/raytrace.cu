@@ -262,7 +262,9 @@ namespace Raytrace {
 
 			// std::cout << px << " " << py << " " <<  h_pixels[id] << std::endl;
 		}
-		
+
+		free(h_pixels);
+		cudaFree(d_pixels);
 		cudaFree(d_tris);
 		cudaFree(d_spheres);
 	    cudaFree(d_lights);
