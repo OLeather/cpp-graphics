@@ -43,7 +43,7 @@ void CGLWindow::show(){
             XNextEvent(display,&KeyEvent); //Gets exactly one event
             if(KeyEvent.type==KeyPress) {
                 auto key =KeyEvent.xkey.keycode; //Gets the key code, NOT HIS CHAR EQUIVALENT
-                std::cout << key << " pressed \n"; //Displays the key code
+                // std::cout << key << " pressed \n"; //Displays the key code
 
                 //W
                 if (key == 25)  {
@@ -91,7 +91,7 @@ void CGLWindow::show(){
 
             } if(KeyEvent.type==KeyRelease) {
                 auto key = KeyEvent.xkey.keycode;
-                std::cout << key << " released \n"; //Displays the key code
+                // std::cout << key << " released \n"; //Displays the key code
 
                 //W
                 if (key == 25)  {

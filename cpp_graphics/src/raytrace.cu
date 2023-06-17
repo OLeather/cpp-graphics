@@ -251,6 +251,7 @@ namespace Raytrace {
 		// std::cout << thr_per_blk << std::endl;
 
 		renderKernel<<<blk_in_grid, thr_per_blk>>>(fx, fy, width, height, d_origin, d_rotation, d_tris, h_numTris, d_spheres, h_numSpheres, d_lights, h_numLights, d_pixels);
+		cudaDeviceSynchronize(); 
 
 		cudaMemcpy(h_pixels, d_pixels, width*height*sizeof(int), cudaMemcpyDeviceToHost);
 
@@ -324,23 +325,17 @@ namespace Raytrace {
 		float alpha = rotation.x;
 		float beta = rotation.y;
 		float gamma = rotation.z;
-
-		// float3 dir = normalize(make_float3(
-		// 	dx * (cos(beta)*cos(gamma)) + dy * (sin(alpha)*sin(beta)*cos(gamma) - cos(alpha)*sin(gamma)) + dz * (cos(alpha)*sin(beta)*cos(gamma) + sin(alpha)*sin(gamma)),
-		// 	dx * (cos(beta)*sin(gamma)) + dy * (sin(alpha)*sin(beta)*sin(gamma) + cos(alpha)*cos(gamma)) + dz * (cos(alpha)*sin(beta)*sin(gamma) - sin(alpha)*cos(gamma)), 
-		// 	-dx * (sin(beta)) + dy * (sin(alpha)*sin(beta)) + dz * (cos(alpha)*cos(beta))
-		// ));
 		
 		float3 dir = normalize(make_float3(
 			dx,
-			dy * cos(alpha) - dz * sin(alpha),
-			dy * sin(alpha) + dz * cos(alpha)
+			dy * __cosf(alpha) - dz * __sinf(alpha),
+			dy * __sinf(alpha) + dz * __cosf(alpha)
 		));
 
 		dir = normalize(make_float3(
-			dir.x * cos(beta) + dir.z * sin(beta),
+			dir.x * __cosf(beta) + dir.z * __sinf(beta),
 			dir.y,
-			-dir.x * sin(beta) + dir.z * cos(beta)
+			-dir.x * __sinf(beta) + dir.z * __cosf(beta)
 		));
 
 		int color = 0;
@@ -354,9 +349,9 @@ namespace Raytrace {
 		float3 N;
 		int hitIndex;
 		float depth = 0;
-
+		
 		color = createRGBInt(0, 0, 0);
-
+		
 		if(step < MAX_RAYTRACE_DEPTH){
 			depth = cast(dir, origin, tris, numTris, spheres, numSpheres, hitPoint, N, hitIndex);
 			if(depth > 0 && depth > 0.01){
@@ -411,26 +406,34 @@ namespace Raytrace {
 				float kr = fresnel(dir, N, kIndexOfRefraction);
 				int reflectColor = 0, refractColor = 0;
 
-				// Reflection raytrace
-				float3 reflectionDirection = reflect(V, N);
-				raytrace(reflectionDirection, hitOffset, tris, numTris, spheres, numSpheres, lights, numLights, reflectColor, step + 1);
-				
-				// Refraction raytrace
-				if(kr < 1){
-					float3 refractionDirection = normalize(refract(dir, N, kIndexOfRefraction));
-					float3 refractionOrigin = outside ? hitPoint - bias : hitPoint + bias;
-					raytrace(refractionDirection, refractionOrigin, tris, numTris, spheres, numSpheres, lights, numLights, refractColor, step + 1);
-				}
-
-				float3 reflectedLight = kr * createRGBVec(reflectColor);
-
-				float3 refractedLight = (1.0-kr) * createRGBVec(refractColor);
-
 				// printf("%f \n", kr);
 
 				float3 directLight = hitColor * kAmbient + (diffuseVec * kDiffuse) + (specularVec * kSpecular);
 
-				float3 colorVec = directLight + reflectedLight + refractedLight;
+				float3 colorVec = directLight ;
+
+				if(kIndexOfRefraction != -1){
+					// Reflection raytrace
+					float3 reflectionDirection = reflect(V, N);
+					raytrace(reflectionDirection, hitOffset, tris, numTris, spheres, numSpheres, lights, numLights, reflectColor, step + 1);
+					
+					// Refraction raytrace
+					if(kr < 1){
+						float3 refractionDirection = normalize(refract(dir, N, kIndexOfRefraction));
+						float3 refractionOrigin = outside ? hitPoint - bias : hitPoint + bias;
+						raytrace(refractionDirection, refractionOrigin, tris, numTris, spheres, numSpheres, lights, numLights, refractColor, step + 1);
+					}
+
+				
+					float3 reflectedLight = kr * createRGBVec(reflectColor);
+
+					float3 refractedLight = (1.0-kr) * createRGBVec(refractColor);
+
+					colorVec += reflectedLight + refractedLight;
+				}
+	
+
+
 
 				color = createRGBInt(min(int(colorVec.x), 255), min(int(colorVec.y), 255), min(int(colorVec.z), 255));
 			}

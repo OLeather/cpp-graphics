@@ -7,7 +7,7 @@
 #include "cpp_graphics.hpp"
 
 int main() {
-    int width = 1920, height = 1080;
+    int width = 800, height = 800;
     float fov = 30;
     
     // CGLTri *tri0 = new CGLTri(Vector3(10, -10, -1), Vector3(10, 0, -1), Vector3(0, 0, -1), DIFFUSE, Vector3(255, 0, 0), 0.9, 0.1, 0.001, 5);
@@ -24,11 +24,11 @@ int main() {
         DIFFUSE, 
         Vector3(255, 0, 0), 
         1, 
-        0.5,
-        0.2, 
+        0.1,
+        .2, 
         25,
-        1,
-        0);
+        .1,
+        .1);
         
     CGLTri *tri1 = new CGLTri(
         Vector3(1 * planeWidth, 0, 1 * planeHeight) + plane1Origin,
@@ -36,11 +36,11 @@ int main() {
         Vector3(1 * planeWidth, 0, -1 * planeHeight) + plane1Origin, 
         DIFFUSE, 
         Vector3(255, 255, 255), 
-        0.0, 
-        0.0,
-        0.1, 
+        1, 
+        0.01,
+        0.2, 
         25,
-        .1,
+        -1,
         0);
     
     float plane2Width = 5;
@@ -52,7 +52,7 @@ int main() {
         Vector3(1 * plane2Width, -1 * plane2Height, 0)  + plane2Origin, 
         DIFFUSE, 
         Vector3(0, 255, 255), 
-        1, 
+        0, 
         0.5,
         0.1, 
         25,
