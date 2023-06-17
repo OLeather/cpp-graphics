@@ -70,8 +70,34 @@ inline __host__ __device__ float3 max(float a, float3 v)
     return make_float3(max(a, v.x), max(a, v.y), max(a, v.z));
 }
 
-inline __host__ __device__ float3 reflect(float3 dir, float3 normal){
+inline __host__ __device__ float3 reflect(const float3 &dir, const float3 &normal){
 	return (dot(normalize(dir),  normalize(normal)) * 2.0 * normalize(normal)) - normalize(dir);
+}
+
+inline __host__ __device__ float3 refract(const float3 &dir, const float3 &N, const float &ior){
+	float cosi = dot(dir, N);
+	if(cosi > 1) cosi = 1;
+	if(cosi < -1) cosi = -1;
+	float etai = 1, etat = ior;
+	float3 n = N;
+	if(cosi < 0) {
+		cosi = -cosi;
+	}
+	else{
+		float temp = etai;
+		etai = etat;
+		etat = temp;
+		n = make_float3(0, 0, 0) - N;
+	}
+
+	float eta = etai/etat;
+	float k = 1-eta*eta*(1-cosi*cosi);
+	if(k < 0){
+		return make_float3(0, 0, 0);
+	}
+	else{
+		return eta * dir + (eta * cosi - sqrt(k)) * n;
+	}
 }
 
 namespace Raytrace {
@@ -185,10 +211,10 @@ namespace Raytrace {
 			h_tris[i] = tri;
 		}
 
-		int h_numSpheres = 5;
+		int h_numSpheres = 2;
 		Sphere h_spheres[h_numSpheres];
 		for(int i = 0; i < h_numSpheres; i++){
-			Sphere sphere = Sphere(make_float3(i * 15, 0, 5), 5, make_float3(255, 255, 255), 0, 1, 0.0, 50, .1, 0);
+			Sphere sphere = Sphere(make_float3(i * 15, 0, 5), 5, make_float3(255, 255, 255), 1, 1, i == 0 ? 0 : 0.01, 50, i == 0? 1.01 : 0, 0);
 			h_spheres[i] = sphere;
 		}
 
@@ -280,6 +306,8 @@ namespace Raytrace {
 		return kr;
 	}
 
+
+
 	__global__ void renderKernel(float fx, float fy, int width, int height, float3 origin, float3 rotation, Triangle tris[], int numTris, Sphere spheres[], int numSpheres, Light lights[], int numLights, int* pixels)
 	{
 		int id = blockDim.x * blockIdx.x + threadIdx.x;
@@ -290,8 +318,28 @@ namespace Raytrace {
 		float y =  height/2.0 - py;
 		float dx = x/-fx;
 		float dy = y/-fy;
-		float3 dir = normalize(make_float3(dx * cos(rotation.x) + 1 * sin(rotation.x), dy, -dx * sin(rotation.x) + 1 * cos(rotation.x)));
+		float dz = 1;
+		float alpha = rotation.x;
+		float beta = rotation.y;
+		float gamma = rotation.z;
+
+		// float3 dir = normalize(make_float3(
+		// 	dx * (cos(beta)*cos(gamma)) + dy * (sin(alpha)*sin(beta)*cos(gamma) - cos(alpha)*sin(gamma)) + dz * (cos(alpha)*sin(beta)*cos(gamma) + sin(alpha)*sin(gamma)),
+		// 	dx * (cos(beta)*sin(gamma)) + dy * (sin(alpha)*sin(beta)*sin(gamma) + cos(alpha)*cos(gamma)) + dz * (cos(alpha)*sin(beta)*sin(gamma) - sin(alpha)*cos(gamma)), 
+		// 	-dx * (sin(beta)) + dy * (sin(alpha)*sin(beta)) + dz * (cos(alpha)*cos(beta))
+		// ));
 		
+		float3 dir = normalize(make_float3(
+			dx,
+			dy * cos(alpha) - dz * sin(alpha),
+			dy * sin(alpha) + dz * cos(alpha)
+		));
+
+		dir = normalize(make_float3(
+			dir.x * cos(beta) + dir.z * sin(beta),
+			dir.y,
+			-dir.x * sin(beta) + dir.z * cos(beta)
+		));
 
 		int color = 0;
 		raytrace(dir, origin, tris, numTris, spheres, numSpheres, lights, numLights, color, 0);
@@ -335,7 +383,9 @@ namespace Raytrace {
 				float3 diffuseVec = make_float3(0, 0, 0);
 				float3 specularVec = make_float3(0, 0, 0);
 
-				float3 hitOffset = (dot(dir, N) < 0) ? (hitPoint + N * 0.001) : (hitPoint - N * 0.001);
+				bool outside = dot(dir, N) < 0;
+				float3 bias = N * 0.001;
+				float3 hitOffset = (outside) ? (hitPoint + bias) : (hitPoint - bias);
 				for(int i = 0; i < 1; i++){
 					float3 L = normalize(lights[i].point - hitPoint);
 
@@ -355,16 +405,30 @@ namespace Raytrace {
 
 				// printf("%f %f %f \n", diffuseVec.x, diffuseVec.y, diffuseVec.z);
 
-				float3 W = reflect(V, N);
-				int reflectColor = 0;
-				
-				raytrace(W, hitOffset, tris, numTris, spheres, numSpheres, lights, numLights, reflectColor, step + 1);
+
 				float kr = fresnel(dir, N, kIndexOfRefraction);
+				int reflectColor = 0, refractColor = 0;
+
+				// Reflection raytrace
+				float3 reflectionDirection = reflect(V, N);
+				raytrace(reflectionDirection, hitOffset, tris, numTris, spheres, numSpheres, lights, numLights, reflectColor, step + 1);
+				
+				// Refraction raytrace
+				if(kr < 1){
+					float3 refractionDirection = normalize(refract(dir, N, kIndexOfRefraction));
+					float3 refractionOrigin = outside ? hitPoint - bias : hitPoint + bias;
+					raytrace(refractionDirection, refractionOrigin, tris, numTris, spheres, numSpheres, lights, numLights, refractColor, step + 1);
+				}
+
 				float3 reflectedLight = kr * createRGBVec(reflectColor);
+
+				float3 refractedLight = (1.0-kr) * createRGBVec(refractColor);
+
+				// printf("%f \n", kr);
 
 				float3 directLight = hitColor * kAmbient + (diffuseVec * kDiffuse) + (specularVec * kSpecular);
 
-				float3 colorVec = directLight + reflectedLight;
+				float3 colorVec = directLight + reflectedLight + refractedLight;
 
 				color = createRGBInt(min(int(colorVec.x), 255), min(int(colorVec.y), 255), min(int(colorVec.z), 255));
 			}

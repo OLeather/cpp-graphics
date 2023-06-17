@@ -86,8 +86,6 @@ bool RayTraceRenderer::trace(const Vector3 &rayDirection, const Vector3 &rayOrig
 }
 
 int*** RayTraceRenderer::render(float fx, float fy, Vector3 origin, Vector3 rotation, std::vector<CGLTri*> objects, std::vector<CGLLight*> lights){
-    
-    std::cout << "Start" << std::endl;
     Vector3 *hitPoint = new Vector3();
     float *depth = new float;
     int *color = new int;
@@ -112,7 +110,5 @@ int*** RayTraceRenderer::render(float fx, float fy, Vector3 origin, Vector3 rota
     // }
 
     Raytrace::render(width, height, fx, fy, origin, rotation, objects, lights, pixels);
-
-    std::cout << "Done" << std::endl;
     return &pixels;
 }

@@ -20,5 +20,5 @@ namespace Raytrace {
 	__device__ float cast(float3 dir, float3 origin, Triangle tris[], int numTris, Sphere spheres[], int numSpheres);
 	__device__ float cast(float3 dir, float3 origin, Triangle tris[], int numTris, Sphere spheres[], int numSpheres, float3 &hitPoint, float3 &hitNormal, int &hitIndex);
 
-	const int MAX_RAYTRACE_DEPTH = 5;
+	const int MAX_RAYTRACE_DEPTH = 4;
 }

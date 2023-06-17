@@ -56,7 +56,7 @@ int main() {
         0.5,
         0.1, 
         25,
-        1,
+        0,
         0);
 
     // CGLTri *tri3 = new CGLTri(Vector3(-1 * plane2Width, 1 * plane2Height, 0) + plane2Origin, 
@@ -68,10 +68,10 @@ int main() {
     //     0.5, 
     //     0.5, 
     //     25);
-        
+
     CGLLight *light0 = new CGLLight(Vector3(10, 5, -10), Vector3(255, 255, 255), 1);
 
-    CGLLight *light1 = new CGLLight(Vector3(-10, -5, -10), Vector3(255, 255, 255), 1);
+    CGLLight *light1 = new CGLLight(Vector3(-10, -5, 0), Vector3(255, 255, 255), 1);
 
     RayTraceRenderer *renderer = new RayTraceRenderer(width, height, 5);
     CGLCamera *camera = new CGLCamera(renderer, fov);
