@@ -104,6 +104,4 @@ float3 color = directLight + reflectedLight + refractedLight;
 
 ![Screenshot 2023-06-18 004457](https://github.com/OLeather/cpp-graphics/assets/43189206/569deea8-24b5-4468-80ee-b915920ddda6)
 
-![Screenshot 2023-06-18 004135](https://github.com/OLeather/cpp-graphics/assets/43189206/9052f0f9-5934-4afe-919a-46ac815e28bf)
-
 ![Screenshot 2023-06-16 125026](https://github.com/OLeather/cpp-graphics/assets/43189206/3b135cdf-4411-4359-9f3b-18662d61aa98)
