@@ -7,6 +7,8 @@ To expand upon a previous project I made a few years ago in High School, [OLeath
 ## Features
 Capable of diffuse, specular, reflective, and refractive light calculations for a variety of effective materials and surfaces. Computes each pixel in parallel using CUDA graphics acceleration.
 
+![Screenshot 2023-06-18 002757](https://github.com/OLeather/cpp-graphics/assets/43189206/53fefe1d-3f24-461e-8c80-b483a321afb5)
+
 ## Algorithms
 The diffuse and specular light are calculated using the Phong illumination model. For reflection, the ray from the pixel to the object is reflected across the object's normal, and the ray tracing algorithm is run recursively on the new reflected ray. For refraction, the refractive ray is calculated based on the hit normal and the index of refraction of the object the ray hits, and the ray tracing algorithm is again run recursively on the new refracted ray. The ray is traced recursively up to 4 times. The reflected and refracted ray intensity is calculated using the fresnel effect for more realistic lighting.
 
@@ -98,6 +100,5 @@ float3 color = directLight + reflectedLight + refractedLight;
 ```
 
 # Results
-
 ![Screenshot 2023-06-16 151325](https://github.com/OLeather/cpp-graphics/assets/43189206/c3b09c4f-2770-47c1-8396-91482b4ee9fa)
 ![Screenshot 2023-06-16 125026](https://github.com/OLeather/cpp-graphics/assets/43189206/3b135cdf-4411-4359-9f3b-18662d61aa98)
