@@ -14,7 +14,7 @@ file(GLOB cpp_graphics_lib_src
 
 add_library(cpp_graphics_lib ${cpp_graphics_lib_src})
 
-target_include_directories(cpp_graphics_lib PUBLIC cpp_graphics/include)
+target_include_directories(cpp_graphics_lib PUBLIC cpp_graphics/include tiny_obj_loader tiny_obj_loader/mapbox)
 target_link_libraries(cpp_graphics_lib X11)
 
 # create the main executable

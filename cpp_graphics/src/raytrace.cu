@@ -211,10 +211,10 @@ namespace Raytrace {
 			h_tris[i] = tri;
 		}
 
-		int h_numSpheres = 2;
+		int h_numSpheres = 1;
 		Sphere h_spheres[h_numSpheres];
 		for(int i = 0; i < h_numSpheres; i++){
-			Sphere sphere = Sphere(make_float3(i * 15, 0, 5), 5, make_float3(255, 255, 255), 1, 1, i == 0 ? 0 : 0.01, 50, i == 0? 1.01 : 0, 0);
+			Sphere sphere = Sphere(make_float3(0, 10, -20), 5, make_float3(255, 255, 255), 1, 1, i == 1 ? 0 : 0.01, 50, i == 1? 1.01 : 0, 0);
 			h_spheres[i] = sphere;
 		}
 
